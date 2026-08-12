@@ -90,8 +90,8 @@
   outline-offset: 1px;
 }
 
-/* The bulk buttons sit disabled until something is checked, and Deploy until
-   there is a change to apply — both are steady states, not error feedback. */
+/* Deploy sits disabled until there is a change to apply — a steady state, not
+   error feedback. */
 .testing-env__btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -260,7 +260,6 @@ input.testing-env__input {
 
 /* Every column but the PR title is sized to its content, so the title keeps
    all the slack. */
-.testing-env__col-check,
 .testing-env__col-toggle,
 .testing-env__col-actions,
 .testing-env__drift-cell {
@@ -461,13 +460,20 @@ a.testing-env__pill:focus-visible {
   outline-offset: 2px;
 }
 
+/* Two verbs in the cell when there is an update to pull; underlined links need
+   a real gap between them to read as separate targets, and one of them removes
+   a PR — worth a little more room than adjacent controls usually get. */
+.testing-env__row-action + .testing-env__row-action {
+  margin-left: var(--spacing-md);
+}
+
 /* ── Paused rows ────────────────────────────────────────────── */
 
 /* A paused PR isn't on the box, so its row drains of color — grey fill, grey
    text, grey avatars, unfilled pills. Text is mixed toward the row fill rather
    than set to a flat grey, so everything sits a shade lighter than muted.
-   Deliberately not row-wide opacity: the checkbox and the toggle you resume it
-   with have to stay crisp. Late in the file so this outranks the pending tint. */
+   Deliberately not row-wide opacity: the toggle you resume it with and the row's
+   verbs have to stay crisp. Late in the file so this outranks the pending tint. */
 .testing-env__row.is-inactive {
   --paused-text: color-mix(
     in srgb,
@@ -514,11 +520,6 @@ a.testing-env__pill:focus-visible {
   color: var(--paused-text-strong);
 }
 
-/* Last of the row backgrounds: pointer feedback beats every state tint. */
-.testing-env__row:hover td {
-  background: var(--color-control-hover);
-}
-
 /* ── Footer actions ─────────────────────────────────────────── */
 
 /* Same horizontal padding as the bar, the cells and the deploy band: one
@@ -528,22 +529,7 @@ a.testing-env__pill:focus-visible {
   flex-wrap: wrap;
   gap: var(--spacing-md);
   align-items: center;
-  justify-content: space-between;
   padding: var(--spacing-md);
-}
-
-.testing-env__bulk {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  align-items: center;
-}
-
-.testing-env__selected {
-  margin-right: var(--spacing-2xs);
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
 }
 
 .testing-env__blank {

@@ -33,8 +33,6 @@
    every string it returns, so an unescaped `%s` left here would be eaten
    before it ever reached JS. #}
 {% set i18n_strings = {
-    "noneSelected": _("None selected"),
-    "selected": _("%(count)s selected", count="%s"),
     "removing": _("Removing #%(num)s…", num="%s"),
     "updating": _("Updating #%(num)s…", num="%s"),
     "enabling": _("Enabling #%(num)s…", num="%s"),
@@ -69,15 +67,11 @@
             {% endif %}
         </header>
         {% if payload.get('prs') %}
-            {# Two empty forms the controls join by id, rather than one wrapping the
-               table. A row's toggle and its remove/update button act on that row
-               alone, so they must not pick up whatever the checkboxes have selected
-               — separate forms is what keeps the two field sets apart. Neither
-               carries an action: every button that submits them names its own
-               endpoint in formaction. #}
+            {# One empty form the row controls join by id, rather than one wrapping
+               the table: a form can't be nested in a table, and each button posts
+               only its own row's PR number. It carries no action — every button
+               that submits it names its own endpoint in formaction. #}
             {% if is_maintainer %}
-                <form method="post" id="testing-bulk-form" class="testing-env__anchor-form">
-                </form>
                 <form method="post" id="testing-row-form" class="testing-env__anchor-form">
                 </form>
             {% endif %}
@@ -86,11 +80,6 @@
                     <thead>
                         <tr>
                             {% if is_maintainer %}
-                                <th scope="col" class="testing-env__col-check">
-                                    <input type="checkbox"
-                                           data-select-all
-                                           aria-label="{{ _('Select all PRs') }}">
-                                </th>
                                 <th scope="col">{{ _("On") }}</th>
                             {% endif %}
                             <th scope="col">{{ _("PR") }}</th>
@@ -119,18 +108,11 @@
                             <tr data-pr="{{ pr['pr'] }}"
                                 class="testing-env__row {%- if merged %} is-merged{% endif %} {%- if not active %} is-inactive{% endif %} {%- if pr.get('is_new') %} is-new{% endif %} {%- if pending %} is-pending{% endif %}">
                                 {% if is_maintainer %}
-                                    <td class="testing-env__col-check">
-                                        <input type="checkbox"
-                                               form="testing-bulk-form"
-                                               name="prs"
-                                               value="{{ pr['pr'] }}"
-                                               aria-label="{{ _('Select PR %(num)s', num=pr['pr']) }}">
-                                    </td>
-                                    {# Leftmost, beside the checkbox, so a scan down the left edge
-                                       answers "what's on the box" without reading each row. A submit
-                                       button rather than a checkbox: it posts the state it is *not*
-                                       currently in, so one click flips the row with or without JS.
-                                       aria-pressed carries the state the switch is painted in. #}
+                                    {# Leftmost, so a scan down the left edge answers "what's on the
+                                       box" without reading each row. A submit button rather than a
+                                       checkbox: it posts the state it is *not* currently in, so one
+                                       click flips the row with or without JS. aria-pressed carries
+                                       the state the switch is painted in. #}
                                     <td class="testing-env__col-toggle">
                                         <button type="submit"
                                                 class="testing-env__switch"
@@ -200,19 +182,12 @@
                                 </td>
                                 {% if is_maintainer %}
                                     {# Verbs live out here, past the data, so the drift column reads as
-                                       pure status. The next deploy drops merged PRs anyway, so Remove
-                                       is only an early-out. #}
+                                       pure status. Every row can be removed; update only appears when
+                                       there is a newer commit that isn't already staged. A merged PR
+                                       is dropped by the next deploy anyway, so its Remove is just an
+                                       early-out, and there is nothing left to pull. #}
                                     <td class="testing-env__col-actions">
-                                        {% if merged %}
-                                            <button type="submit"
-                                                    class="testing-env__row-action"
-                                                    form="testing-row-form"
-                                                    formaction="/status/remove"
-                                                    name="prs"
-                                                    value="{{ pr['pr'] }}"
-                                                    data-row-action
-                                                    data-pr="{{ pr['pr'] }}">{{ _("remove") }}</button>
-                                        {% elif drift > 0 and not pr.get('pull_latest_sha') %}
+                                        {% if drift > 0 and not merged and not pr.get('pull_latest_sha') %}
                                             <button type="submit"
                                                     class="testing-env__row-action"
                                                     form="testing-row-form"
@@ -222,6 +197,14 @@
                                                     data-row-action
                                                     data-pr="{{ pr['pr'] }}">{{ _("update") }}</button>
                                         {% endif %}
+                                        <button type="submit"
+                                                class="testing-env__row-action"
+                                                form="testing-row-form"
+                                                formaction="/status/remove"
+                                                name="prs"
+                                                value="{{ pr['pr'] }}"
+                                                data-row-action
+                                                data-pr="{{ pr['pr'] }}">{{ _("remove") }}</button>
                                     </td>
                                 {% endif %}
                             </tr>
@@ -230,29 +213,18 @@
                 </table>
             </div>
             {% if is_maintainer %}
-                {# formaction is the endpoint for both paths: the browser posts the
-                   bulk form there on its own, and the controller reads the same
-                   attribute for its fetch. data-bulk only marks which buttons the
-                   selection count enables. #}
-                {% set bulk_actions = [
-                    ("/status/pull-latest", _("Update"), false),
-                    ("/status/enable", _("Enable"), false),
-                    ("/status/disable", _("Disable"), false),
-                    ("/status/remove", _("Remove"), false),
-                    ("/status/refresh", _("Refresh from GitHub"), true),
-                ] %}
+                {# Every verb that acts on a PR now lives in that PR's own row, so
+                   all this holds is the one action about the table as a whole:
+                   dropping the cached GitHub read. The formaction restates the
+                   form's action because that is the one attribute the controller
+                   reads to find its endpoint. #}
                 <footer class="testing-env__actions">
-                    <div class="testing-env__bulk">
-                        <span class="testing-env__selected" data-selected-count>{{ _("None selected") }}</span>
-                        {% for action, label, no_selection in bulk_actions %}
-                            <button type="submit"
-                                    class="testing-env__btn testing-env__btn--small"
-                                    form="testing-bulk-form"
-                                    formaction="{{ action }}"
-                                    data-bulk
-                                    {% if no_selection %}data-no-selection{% endif %}>{{ label }}</button>
-                        {% endfor %}
-                    </div>
+                    <form method="post" action="/status/refresh">
+                        <button type="submit"
+                                class="testing-env__btn testing-env__btn--small"
+                                formaction="/status/refresh"
+                                data-refresh>{{ _("Refresh from GitHub") }}</button>
+                    </form>
                 </footer>
             {% endif %}
         {% else %}

@@ -20,8 +20,6 @@ import { sprintf } from '../i18n.js';
  * in by sprintf().
  */
 export const DEFAULT_STRINGS = {
-    noneSelected: 'None selected',
-    selected: '%s selected',
     removing: 'Removing #%s…',
     updating: 'Updating #%s…',
     enabling: 'Enabling #%s…',
@@ -33,7 +31,7 @@ export const DEFAULT_STRINGS = {
  * Attributes that mark a control worth refocusing after an update, most
  * specific first. See focusedSelector().
  */
-const FOCUS_ATTRS = ['data-row-toggle', 'data-row-action', 'data-bulk', 'data-deploy'];
+const FOCUS_ATTRS = ['data-row-toggle', 'data-row-action', 'data-refresh', 'data-deploy'];
 
 /**
  * @param {Element} el
@@ -62,7 +60,6 @@ class TestingStatusPanel {
         this.strings = stringsFromElement(root);
 
         this.bind();
-        this.refreshSelection();
     }
 
     /**
@@ -74,30 +71,6 @@ class TestingStatusPanel {
         if (!toast) return;
         toast.textContent = message;
         toast.hidden = !message;
-    }
-
-    /** Update the "N selected" label and enable/disable the bulk buttons. */
-    refreshSelection() {
-        const checked = this.root.querySelectorAll('input[name="prs"]:checked');
-        const label = this.root.querySelector('[data-selected-count]');
-        if (label) {
-            label.textContent = checked.length
-                ? sprintf(this.strings.selected, checked.length)
-                : this.strings.noneSelected;
-        }
-        // Server-rendered they start enabled, so a no-JS click on an empty
-        // selection posts nothing and the endpoint bounces straight back.
-        this.root.querySelectorAll('[data-bulk]').forEach((button) => {
-            if (button.hasAttribute('data-no-selection')) return;
-            button.disabled = checked.length === 0;
-        });
-    }
-
-    /**
-     * @return {String[]} PR numbers of the checked rows.
-     */
-    selectedPrs() {
-        return Array.from(this.root.querySelectorAll('input[name="prs"]:checked')).map((cb) => cb.value);
     }
 
     /**
@@ -121,7 +94,6 @@ class TestingStatusPanel {
 
         const focused = focusedSelector(this.root);
         this.root.replaceChildren(...incoming.childNodes);
-        this.refreshSelection();
         // The control that triggered this update was replaced along with the
         // rest of the panel; put focus back on its successor.
         if (focused) {
@@ -170,11 +142,9 @@ class TestingStatusPanel {
             const verb = action.endsWith('remove') ? this.strings.removing : this.strings.updating;
             return { fields: { prs: [pr] }, message: sprintf(verb, pr) };
         }
-        if (button.hasAttribute('data-bulk')) {
-            const prs = this.selectedPrs();
-            if (!prs.length && !button.hasAttribute('data-no-selection')) return null;
+        if (button.hasAttribute('data-refresh')) {
             // The button's own label is already translated server-side.
-            return { fields: { prs }, message: `${button.textContent.trim()}…` };
+            return { fields: {}, message: `${button.textContent.trim()}…` };
         }
         if (button.hasAttribute('data-deploy')) {
             return { fields: {}, message: this.strings.deploying };
@@ -200,18 +170,6 @@ class TestingStatusPanel {
             event.preventDefault();
             this.runAction(button.getAttribute('formaction'), plan.fields, plan.message);
         });
-
-        this.root.addEventListener('change', (event) => {
-            const selectAll = event.target.closest('[data-select-all]');
-            if (selectAll) {
-                this.root.querySelectorAll('input[name="prs"]').forEach((cb) => {
-                    cb.checked = selectAll.checked;
-                });
-            }
-            if (selectAll || event.target.matches('input[name="prs"]')) {
-                this.refreshSelection();
-            }
-        });
     }
 }
 
@@ -230,13 +188,14 @@ function focusedSelector(root) {
 
     const attr = FOCUS_ATTRS.find((name) => active.hasAttribute(name));
     if (!attr) return null;
-
-    // A row control is unique by its PR. Deliberately not keyed on formaction:
-    // a toggle's flips to the opposite endpoint in the very markup we're
-    // looking it up in. The bulk buttons have no PR and differ only by where
-    // they post, so those key on formaction instead.
-    if (active.dataset.pr) return `[${attr}][data-pr="${active.dataset.pr}"]`;
     const action = active.getAttribute('formaction');
+
+    // A toggle is unique by its PR, and deliberately not keyed on formaction:
+    // it flips to the opposite endpoint in the very markup we're looking it up
+    // in. A row can hold both update and remove, so those need the endpoint as
+    // well as the PR to tell them apart.
+    if (attr === 'data-row-toggle') return `[${attr}][data-pr="${active.dataset.pr}"]`;
+    if (active.dataset.pr) return `[${attr}][data-pr="${active.dataset.pr}"][formaction="${action}"]`;
     return action ? `[${attr}][formaction="${action}"]` : `[${attr}]`;
 }
 

@@ -2393,7 +2393,7 @@ msgstr ""
 msgid "Write one entry per line"
 msgstr ""
 
-#: TestingEnvironment.html.jinja admin/solr.html
+#: admin/solr.html
 msgid "Update"
 msgstr ""
 
@@ -7651,15 +7651,6 @@ msgid "Page %s"
 msgstr ""
 
 #: TestingEnvironment.html.jinja
-msgid "None selected"
-msgstr ""
-
-#: TestingEnvironment.html.jinja
-#, python-format
-msgid "%(count)s selected"
-msgstr ""
-
-#: TestingEnvironment.html.jinja
 #, python-format
 msgid "Removing #%(num)s…"
 msgstr ""
@@ -7696,10 +7687,6 @@ msgid "PR numbers or URLs, space or comma separated"
 msgstr ""
 
 #: TestingEnvironment.html.jinja
-msgid "Select all PRs"
-msgstr ""
-
-#: TestingEnvironment.html.jinja
 msgid "On"
 msgstr ""
 
@@ -7713,11 +7700,6 @@ msgstr ""
 
 #: TestingEnvironment.html.jinja
 msgid "Drift"
-msgstr ""
-
-#: TestingEnvironment.html.jinja
-#, python-format
-msgid "Select PR %(num)s"
 msgstr ""
 
 #: TestingEnvironment.html.jinja
@@ -7768,14 +7750,6 @@ msgid "update"
 msgstr ""
 
 #: TestingEnvironment.html.jinja
-msgid "Enable"
-msgstr ""
-
-#: TestingEnvironment.html.jinja
-msgid "Disable"
-msgstr ""
-
-#: TestingEnvironment.html.jinja
 msgid "Refresh from GitHub"
 msgstr ""
 
@@ -7785,6 +7759,14 @@ msgstr ""
 
 #: TestingEnvironment.html.jinja
 msgid "Update pin"
+msgstr ""
+
+#: TestingEnvironment.html.jinja
+msgid "Enable"
+msgstr ""
+
+#: TestingEnvironment.html.jinja
+msgid "Disable"
 msgstr ""
 
 #: TestingEnvironment.html.jinja
